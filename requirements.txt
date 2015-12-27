@@ -1,0 +1,6 @@
+arena
+cv2
+pillow
+beautifulsoup4
+numpy
+scikit-image
