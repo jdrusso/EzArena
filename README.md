@@ -5,7 +5,7 @@ Hearthstone.
 ## Overview
 When in the Arena draft screen, you're presented with 3 cards to choose from at
 a time, in addition to a number of statistics about mana curve at the bottom,
-your class portrait, and your current deck list on the right. The
+your class portrait, and your current deck list on the right. Ideally, this library aims to recognize your class, and then identify the highest-tier card available.
 
 ## Implemented
 
