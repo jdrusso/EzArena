@@ -89,6 +89,8 @@ triplet = list()
 for i in range(3):
     image = ImageGrab.grab(bbox=coords[i])
     image.save("img/original_card%d.jpg" % i)
+
+######### Experimental Image Preprocessing ##########
     # image = ImageOps.invert(image)
     # image.save("img/inverted_card%d.jpg" % i)
 
@@ -107,6 +109,8 @@ for i in range(3):
     # image = ImageEnhance.Contrast(ImageEnhance.Brightness(image).enhance(.15)).enhance(5.6).convert('1', dither=0)
     # image = ImageOps.invert(image.convert('RGB')).convert('1', dither=0)
     # image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*6 if x < 255/6 else 255))
+######################################################
+
     image = ImageEnhance.Contrast(image.convert('L')).enhance(1.4).point(
         lambda x: 0 if (x > 220 and 255) else 255, '1')
 
@@ -123,7 +127,6 @@ for i in range(3):
 
     #Find which card the OCRed text corresponds to
     bestMatch = 0
-
     for rarity in RARITIES:
         for card in cards[rarity]:
             score = SM(None, str(textresult), str(card)).ratio()
@@ -131,25 +134,12 @@ for i in range(3):
                 bestMatch = score
                 cardMatch = card
 
+    #Store match
     print("Detected card was %s, confidence %f" % (cardMatch, score))
     triplet.append(cardMatch)
 
 print("Available cards are %s, %s, and %s" % (triplet[0], triplet[1], triplet[2]))
 
-# # Capture images of cards
-# image = ImageGrab.grab(bbox=(385,390,610,440))
-#
-# image = ImageOps.invert(image)
-# image.save("card1.jpg")
-# url = uploader.upload("testimage.jpg")
-#
-# #Construct URL to raw image
-# imgurl = url[:20] + 'extpics/' + url[20:]
-#
-# # OCR card names from images
-# textresult = urllib.urlopen(AWS_URL_START + imgurl + AWS_URL_END).read()
-# print("OCR Result: %s" % textresult)
-# # print("Image URL: %s" % imgurl)
 #
 # #Find which card the OCRed text corresponds to
 # bestMatch = 0
