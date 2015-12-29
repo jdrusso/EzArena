@@ -96,8 +96,8 @@ for i in range(3):
     # c = ImageEnhance.Contrast(image)
     # image = c.enhance(1.5)
     #
-    # b = ImageEnhance.Brightness(image)
-    # image = b.enhance(3)
+    # b = ImageEnhance.Contrast(image)
+    # image = b.enhance(1.1)
     #
     # image = image.convert('L')
     #
@@ -106,7 +106,7 @@ for i in range(3):
 
     # image = ImageEnhance.Contrast(ImageEnhance.Brightness(image).enhance(.15)).enhance(5.6).convert('1', dither=0)
     # image = ImageOps.invert(image.convert('RGB')).convert('1', dither=0)
-    # image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*6 if x < 255/6 else 255))
+    image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*2.5 ))
 ######################################################
 
     #Preprocess image for OCR.
@@ -141,6 +141,19 @@ for i in range(3):
     triplet.append(cardMatch)
 
 print("Available cards are %s, %s, and %s" % (triplet[0], triplet[1], triplet[2]))
+
+# Determine optimal cards
+
+optimal = list()
+for rarity in RARITIES:
+    for card in cards[rarity]:
+        if card in triplet:
+            optimal.append(card)
+            triplet.remove(card)
+
+print("\nCard ranking:")
+for i in range(3):
+    print("[%d] %s" % (i+1, optimal[i]))
 
 # Draw colored overlay on screen over cards, i.e. green for best choice, red for worst
 
