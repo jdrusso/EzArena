@@ -9,10 +9,15 @@ import cv2, math, urllib
 import pytesser as pyt
 import uploader
 from difflib import SequenceMatcher as SM
+from Tkinter import *
 
 # This compares histograms by calculating Bhattacharyya distance. Seems to be the
 #   most accurate algorithm.
 METHOD = 2
+
+LEFT   = 0
+CENTER = 1
+RIGHT  = 2
 
 CLASSES = ["druid", "hunter", "mage", "paladin",
             "priest", "rogue", "shaman", "warlock", "warrior"]
@@ -81,6 +86,20 @@ for rarity in RARITIES:
 
             cards[rarity].append(card.get_text()[:-1])
 
+cardOutlines = [(378,245,622,583),(656,245,900,583),(940,245,1184,583)]
+width = cardOutlines[0][2]-cardOutlines[0][0]
+height = cardOutlines[0][3]-cardOutlines[0][1]
+
+windows = list()
+for i in range(3):
+    obj = Tk()
+    windows.append(obj)
+    windows[i].resizable(width=FALSE, height=FALSE)
+    windows[i].geometry('%dx%d+%d+%d' %
+        (width, height, cardOutlines[i][0],cardOutlines[i][1]))
+    windows[i].attributes('-alpha',0.2)
+    windows[i].overrideredirect(1)
+
 coords = [(385,390,610,440),(670,390,895,440),(950,390,1175,440)]
 
 triplet = list()
@@ -106,7 +125,7 @@ for i in range(3):
 
     # image = ImageEnhance.Contrast(ImageEnhance.Brightness(image).enhance(.15)).enhance(5.6).convert('1', dither=0)
     # image = ImageOps.invert(image.convert('RGB')).convert('1', dither=0)
-    image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*2.5 ))
+    image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*2.4 ))
 ######################################################
 
     #Preprocess image for OCR.
@@ -138,24 +157,33 @@ for i in range(3):
 
     #Store match
     print("Detected card was %s, confidence %f" % (cardMatch, score))
-    triplet.append(cardMatch)
+    triplet.append([cardMatch, i])
 
-print("Available cards are %s, %s, and %s" % (triplet[0], triplet[1], triplet[2]))
+print("Available cards are %s, %s, and %s" % (triplet[0][0], triplet[1][0], triplet[2][0]))
 
-# Determine optimal cards
-
+# Ranking
 optimal = list()
 for rarity in RARITIES:
     for card in cards[rarity]:
-        if card in triplet:
-            optimal.append(card)
-            triplet.remove(card)
+        print("%s" % card)
 
+        for c in triplet:
+            if c[0] == card:
+                c.append(rarity)
+                optimal.append(c)
+                triplet.remove(c)
+
+print("Optimal : %d" % len(optimal))
 print("\nCard ranking:")
 for i in range(3):
-    print("[%d] %s" % (i+1, optimal[i]))
+    print("[%d] %s \t %s" % (i+1, optimal[i][0], optimal[i][2]))
 
 # Draw colored overlay on screen over cards, i.e. green for best choice, red for worst
+colors = ["green", "yellow", "red"]
+for c in range(3):
+    windows[optimal[c][1]]["bg"] = colors[c]
+
+windows[optimal[c][1]].mainloop()
 
 #TODO: weight mana costs with current curve
 
