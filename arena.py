@@ -81,8 +81,6 @@ for rarity in RARITIES:
 
             cards[rarity].append(card.get_text()[:-1])
 
-# print(cards['beyond-great'])
-
 coords = [(385,390,610,440),(670,390,895,440),(950,390,1175,440)]
 
 triplet = list()
@@ -111,9 +109,13 @@ for i in range(3):
     # image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*6 if x < 255/6 else 255))
 ######################################################
 
+    #Preprocess image for OCR.
+    #TODO: This algorithm SUCKS.
     image = ImageEnhance.Contrast(image.convert('L')).enhance(1.4).point(
         lambda x: 0 if (x > 220 and 255) else 255, '1')
 
+    #Send image to OCR server
+    #TODO: Verify server address
     image.save("img/card%d.jpg" % i)
     url = uploader.upload("img/card%d.jpg" % i)
 
@@ -139,19 +141,6 @@ for i in range(3):
     triplet.append(cardMatch)
 
 print("Available cards are %s, %s, and %s" % (triplet[0], triplet[1], triplet[2]))
-
-#
-# #Find which card the OCRed text corresponds to
-# bestMatch = 0
-#
-# for rarity in RARITIES:
-#     for card in cards[rarity]:
-#         score = SM(None, textresult, card).ratio()
-#         if score > bestMatch:
-#             bestMatch = score
-#             cardMatch = card
-#
-# print("Detected card was %s" % cardMatch)
 
 # Draw colored overlay on screen over cards, i.e. green for best choice, red for worst
 
