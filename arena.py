@@ -74,8 +74,8 @@ tierlist = soup.find(id=hero)
 
 cards = dict()
 
+print("Extracting card names...")
 for rarity in RARITIES:
-    print("\nNow pulling %s cards" % rarity)
 
     cards[rarity] = list()
     for tier in tierlist.findAll(class_="tier %s" % rarity):
@@ -165,7 +165,6 @@ print("Available cards are %s, %s, and %s" % (triplet[0][0], triplet[1][0], trip
 optimal = list()
 for rarity in RARITIES:
     for card in cards[rarity]:
-        print("%s" % card)
 
         for c in triplet:
             if c[0] == card:
@@ -173,7 +172,6 @@ for rarity in RARITIES:
                 optimal.append(c)
                 triplet.remove(c)
 
-print("Optimal : %d" % len(optimal))
 print("\nCard ranking:")
 for i in range(3):
     print("[%d] %s \t %s" % (i+1, optimal[i][0], optimal[i][2]))
