@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup as BS
 from PIL import ImageGrab, Image, ImageOps
 import cv2, math, urllib
 import pytesser as pyt
+import uploader
 
 # This compares histograms by calculating Bhattacharyya distance. Seems to be the
 #   most accurate algorithm.
@@ -17,6 +18,9 @@ CLASSES = ["druid", "hunter", "mage", "paladin",
 
 RARITIES = ['beyond-great', 'great', 'good', 'above-average', 'average',
             'below-average', 'bad', 'terrible']
+
+AWS_URL_START = "http://ec2-52-24-64-160.us-west-2.compute.amazonaws.com/index.php?img="
+AWS_URL_END = "&format=txt"
 
 
 # Capture hero potrait from lower left and compare to saved portraits to determine class
@@ -60,7 +64,7 @@ html = urllib.urlopen('http://www.heartharena.com/tierlist').read()
 soup = BS(html, 'html.parser')
 print("Done.\n")
 
-tierlist = soup.find(id="rogue")
+tierlist = soup.find(id=hero)
 
 cards = dict()
 
@@ -76,16 +80,20 @@ for rarity in RARITIES:
 
             cards[rarity].append(card.get_text()[:-1])
 
-print(cards['beyond-great'])
+# print(cards['beyond-great'])
 
 # Capture images of cards
-
 image = ImageGrab.grab(bbox=(385,390,610,440))
 image = ImageOps.invert(image)
 image.save("card1.jpg")
-pyt.image_to_string("card1.jpg")
+url = uploader.upload("card1.jpg")
+
+#Construct URL to raw image
+imgurl = url[:20] + 'extpics/' + url[20:]
 
 # OCR card names from images
+textresult = urllib.urlopen(AWS_URL_START + imgurl + AWS_URL_END).read()
+print("OCR Result: %s" % textresult)
 
 # Draw colored overlay on screen over cards, i.e. green for best choice, red for worst
 
