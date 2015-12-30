@@ -10,6 +10,17 @@ import pytesser as pyt
 import uploader
 from difflib import SequenceMatcher as SM
 from Tkinter import *
+import win32api
+
+def hideWindow(event):
+    event.widget.withdraw()
+    # print("Hidden!")
+    return
+
+def showWindow(event):
+    event.widget.deiconify()
+    # print("Showed!")
+    return
 
 # This compares histograms by calculating Bhattacharyya distance. Seems to be the
 #   most accurate algorithm.
@@ -72,8 +83,8 @@ print("Done.\n")
 
 tierlist = soup.find(id=hero)
 
+# Construct dict of {card tier : card names in that tier}
 cards = dict()
-
 print("Extracting card names...")
 for rarity in RARITIES:
 
@@ -85,20 +96,6 @@ for rarity in RARITIES:
                 break
 
             cards[rarity].append(card.get_text()[:-1])
-
-cardOutlines = [(378,245,622,583),(656,245,900,583),(940,245,1184,583)]
-width = cardOutlines[0][2]-cardOutlines[0][0]
-height = cardOutlines[0][3]-cardOutlines[0][1]
-
-windows = list()
-for i in range(3):
-    obj = Tk()
-    windows.append(obj)
-    windows[i].resizable(width=FALSE, height=FALSE)
-    windows[i].geometry('%dx%d+%d+%d' %
-        (width, height, cardOutlines[i][0],cardOutlines[i][1]))
-    windows[i].attributes('-alpha',0.2)
-    windows[i].overrideredirect(1)
 
 coords = [(385,390,610,440),(670,390,895,440),(950,390,1175,440)]
 
@@ -159,6 +156,28 @@ for i in range(3):
     print("Detected card was %s, confidence %f" % (cardMatch, score))
     triplet.append([cardMatch, i])
 
+
+
+cardOutlines = [(378,245,622,583),(656,245,900,583),(940,245,1184,583)]
+width = cardOutlines[0][2]-cardOutlines[0][0]
+height = cardOutlines[0][3]-cardOutlines[0][1]
+
+master = Tk()
+master.withdraw()
+windows = list()
+for i in range(3):
+    obj = Toplevel()
+    windows.append(obj)
+    windows[i].wait_visibility(windows[i])
+    windows[i].resizable(width=FALSE, height=FALSE)
+    windows[i].geometry('%dx%d+%d+%d' %
+    (width, height, cardOutlines[i][0],cardOutlines[i][1]))
+    windows[i].attributes('-alpha',0.2)
+    windows[i].bind("<Enter>", hideWindow)
+    windows[i].bind("<Leave>", showWindow)
+
+    windows[i].overrideredirect(1)
+
 print("Available cards are %s, %s, and %s" % (triplet[0][0], triplet[1][0], triplet[2][0]))
 
 # Ranking
@@ -181,7 +200,7 @@ colors = ["green", "yellow", "red"]
 for c in range(3):
     windows[optimal[c][1]]["bg"] = colors[c]
 
-windows[optimal[c][1]].mainloop()
+master.mainloop()
 
 #TODO: weight mana costs with current curve
 
