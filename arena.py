@@ -26,7 +26,7 @@ RIGHT  = 2
 CLASSES = ["druid", "hunter", "mage", "paladin",
             "priest", "rogue", "shaman", "warlock", "warrior"]
 
-RARITIES = ['beyond-great', 'great', 'good', 'above-average', 'average',
+TIERS = ['beyond-great', 'great', 'good', 'above-average', 'average',
             'below-average', 'bad', 'terrible']
 
 # URL to my OCR engine in AWS
@@ -93,21 +93,21 @@ tierlist = soup.find(id=hero)
 cards = dict()
 print("Extracting card names...")
 # Iterate through all rarities
-for rarity in RARITIES:
+for tier in TIERS:
 
-    cards[rarity] = list()
-    # Iterate through all card tiers for that rarity
-    for tier in tierlist.findAll(class_="tier %s" % rarity):
+    cards[tier] = list()
+    # Iterate through all card tiers for that tier
+    for t in tierlist.findAll(class_="tier %s" % tier):
         # Iterate through all list entries for each tier
-        for card in tier.find('ol').findAll('dt'):
+        for card in t.find('ol').findAll('dt'):
 
             # This is a nonbreaking space character that shows up in blank
             #   tierlist entries. Obviously we don't want blank entries.
             if card.get_text() == u'\xa0':
                 break
 
-            # Add card to the list of cards of its rarity.
-            cards[rarity].append(card.get_text()[:-1])
+            # Add card to the list of cards of its tier.
+            cards[tier].append(card.get_text()[:-1])
 
 # Identify triplet of cards
 # This list of tuples corresponds to the bounding boxes of each of the 3 cards
@@ -146,8 +146,8 @@ for i in range(3):
     #Find which card the OCRed text corresponds to. Attempt to determine the
     #   MOST SIMILAR match, since the OCR result is far from perfect.
     bestMatch = 0
-    for rarity in RARITIES:
-        for card in cards[rarity]:
+    for tier in TIERS:
+        for card in cards[tier]:
             score = SM(None, str(textresult), str(card)).ratio()
             if score > bestMatch:
                 bestMatch = score
@@ -195,12 +195,12 @@ print("Available cards are %s, %s, and %s" % (triplet[0][0], triplet[1][0], trip
 # Ranking. This will construct a list 'optimal' of each card in the triplet in
 #   order of how they appear in the tierlist.
 optimal = list()
-for rarity in RARITIES:
-    for card in cards[rarity]:
+for tier in TIERS:
+    for card in cards[tier]:
 
         for c in triplet:
             if c[0] == card:
-                c.append(rarity)
+                c.append(tier)
                 optimal.append(c)
                 triplet.remove(c)
 
