@@ -5,7 +5,8 @@ import pytesser as pyt
 import uploader
 from difflib import SequenceMatcher as SM
 from Tkinter import *
-import win32api
+import win32api, ctypes
+import time #DEBUGGING ONLY
 
 # Callback methods for mouseover events on the colored card overlays
 def hideWindow(event):
@@ -14,6 +15,15 @@ def hideWindow(event):
 def showWindow(event):
     event.widget.deiconify()
     return
+def click(event):
+    print("Clicking")
+    event.widget.withdraw()
+    time.sleep(.1)
+    ctypes.windll.user32.mouse_event(2, 0, 0, 0,0) # left down
+    ctypes.windll.user32.mouse_event(4, 0, 0, 0,0) # left up
+    event.widget.deiconify()
+    return
+
 
 # This compares histograms by calculating Bhattacharyya distance. Seems to be the
 #   most accurate algorithm. METHOD=2 corresponds to that comparison method.
@@ -184,10 +194,11 @@ for i in range(3):
 
     # Add transparency
     windows[i].attributes('-alpha',0.2)
-    windows[i].bind("<Enter>", hideWindow)
-    windows[i].bind("<Leave>", showWindow)
+    # windows[i].bind("<Enter>", hideWindow)
+    # windows[i].bind("<Leave>", showWindow)
+    windows[i].bind("<Button-1>", click)
 
-    # TODO: Do I need this?
+    # Prevents the window manager from decorating this window
     windows[i].overrideredirect(1)
 
 print("Available cards are %s, %s, and %s" % (triplet[0][0], triplet[1][0], triplet[2][0]))
