@@ -2,6 +2,22 @@ This library intends to provide a way to automatically indicate the most
 advantageous card to select when constructing a draft deck for Arena mode in
 Hearthstone.
 
+## Requirements
+
+- Internet access (to communicate with AWS OCR engine)
+- Windows
+- Beautiful Soup 4
+- Python Imaging Library (PIL)
+- win32api
+- OpenCV
+
+You can install these **except OpenCV** with
+`pip install bs4 Pillow pywin32`.
+
+To install OpenCV, follow
+[this link to their website](http://docs.opencv.org/2.4/doc/tutorials/introduction/windows_install/windows_install.html#installation-by-using-the-pre-built-libraries),
+which guides you through using their prebuilt binaries on Sourceforge.
+
 ## Overview
 When in the Arena draft screen, you're presented with 3 cards to choose from at
 a time, in addition to a number of statistics about mana curve at the bottom,
@@ -54,22 +70,6 @@ multiple cards would appear in the same tier.
 
 Tkinter is used to draw an overlay above the cards, where the first, second, and
 third best choice cards are highlighted in green, yellow, and red respectively.
-
-## Requirements
-
-- Internet access (to communicate with AWS OCR engine)
-- Windows
-- Beautiful Soup 4
-- Python Imaging Library (PIL)
-- win32api
-- OpenCV
-
-You can install these **except OpenCV** with
-`pip install bs4 Pillow pywin32`.
-
-To install OpenCV, follow
-[this link to their website](http://docs.opencv.org/2.4/doc/tutorials/introduction/windows_install/windows_install.html#installation-by-using-the-pre-built-libraries),
-which guides you through using their prebuilt binaries on Sourceforge.
 
 ## Implemented
 
