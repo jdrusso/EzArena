@@ -18,10 +18,11 @@ def showWindow(event):
 def click(event):
     print("Clicking")
     event.widget.withdraw()
-    time.sleep(.1)
+    time.sleep(.2)
     ctypes.windll.user32.mouse_event(2, 0, 0, 0,0) # left down
     ctypes.windll.user32.mouse_event(4, 0, 0, 0,0) # left up
     event.widget.deiconify()
+    master.destroy()
     return
 
 
@@ -119,115 +120,128 @@ for tier in TIERS:
             # Add card to the list of cards of its tier.
             cards[tier].append(card.get_text()[:-1])
 
-# Identify triplet of cards
-# This list of tuples corresponds to the bounding boxes of each of the 3 cards
-#   given a fullscreen 1920x1080 window. Yes, it's completely static and depends
-#   on that resolution and window mode. No, it wouldn't be trivial to change that.
-coords = [(385,390,610,440),(670,390,895,440),(950,390,1175,440)]
-triplet = list()
-for i in range(3):
-    # Capture the image of a card in the triplet
-    image = ImageGrab.grab(bbox=coords[i])
-    # TODO: I can probably be more efficient with not saving these.
-    image.save("img/original_card%d.jpg" % i)
+while(True):
 
-######### Experimental Image Preprocessing ##########
+    # Identify triplet of cards
+    # This list of tuples corresponds to the bounding boxes of each of the 3 cards
+    #   given a fullscreen 1920x1080 window. Yes, it's completely static and depends
+    #   on that resolution and window mode. No, it wouldn't be trivial to change that.
+    coords = [(385,390,610,440),(670,390,895,440),(950,390,1175,440)]
+    triplet = list()
+    for i in range(3):
+        # Capture the image of a card in the triplet
+        image = ImageGrab.grab(bbox=coords[i])
+        # TODO: I can probably be more efficient with not saving these.
+        image.save("img/original_card%d.jpg" % i)
 
-    #Preprocess image for OCR.
-    #TODO: This algorithm SUCKS.
-    image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*2.4 ))
-    image = ImageEnhance.Contrast(image.convert('L')).enhance(1.4).point(
-        lambda x: 0 if (x > 220 and 255) else 255, '1')
-######################################################
+    ######### Experimental Image Preprocessing ##########
 
-    #Send image to OCR server
-    #TODO: Verify server address
-    image.save("img/card%d.jpg" % i)
-    url = uploader.upload("img/card%d.jpg" % i)
+        #Preprocess image for OCR.
+        #TODO: This algorithm SUCKS.
+        image = ImageOps.invert(ImageOps.invert(image).point(lambda x: x*2.75 ))
+        image = ImageEnhance.Contrast(image.convert('L')).enhance(1.4).point(
+            lambda x: 0 if (x > 220 and 255) else 255, '1')
+    ######################################################
 
-    #Construct URL to raw image
-    imgurl = url[:20] + 'extpics/' + url[20:]
+        #Send image to OCR server
+        #TODO: Verify server address
+        image.save("img/card%d.jpg" % i)
+        url = uploader.upload("img/card%d.jpg" % i)
 
-    # OCR card names from images
-    textresult = urllib.urlopen(AWS_URL_START + imgurl + AWS_URL_END).read()
-    print("OCR Result: %s" % textresult)
-    # print("Image URL: %s" % imgurl)
+        #Construct URL to raw image
+        imgurl = url[:20] + 'extpics/' + url[20:]
 
-    #Find which card the OCRed text corresponds to. Attempt to determine the
-    #   MOST SIMILAR match, since the OCR result is far from perfect.
-    bestMatch = 0
+        # OCR card names from images
+        textresult = urllib.urlopen(AWS_URL_START + imgurl + AWS_URL_END).read()
+        print("OCR Result: %s" % textresult[:-1])
+        # print("Image URL: %s" % imgurl)
+
+        #Find which card the OCRed text corresponds to. Attempt to determine the
+        #   MOST SIMILAR match, since the OCR result is far from perfect.
+        bestMatch = 0
+        for tier in TIERS:
+            for card in cards[tier]:
+                score = SM(None, str(textresult), str(card)).ratio()
+                if score > bestMatch:
+                    bestMatch = score
+                    cardMatch = card
+
+        #Store matched card
+        print("Detected card was %s, confidence %f\n" % (cardMatch, score))
+        triplet.append([cardMatch, i])
+
+
+    # Define card geometry on window
+    # TODO: Make this resolution-independent.
+    cardOutlines = [(378,245,622,603),(656,245,900,603),(940,245,1184,603)]
+    width = cardOutlines[0][2]-cardOutlines[0][0]
+    height = cardOutlines[0][3]-cardOutlines[0][1]
+
+    # Build the colored card overlays.
+    # TODO: Don't hide overlay. Just capture clicks on it and simulate them on the
+    #       card below.
+    master = Tk()
+    master.withdraw()
+    windows = list()
+    for i in range(3):
+        obj = Toplevel()
+        windows.append(obj)
+        windows[i].wait_visibility(windows[i])
+
+        # No need for the window to be resizeable
+        windows[i].resizable(width=FALSE, height=FALSE)
+
+        # Set window position and size
+        windows[i].geometry('%dx%d+%d+%d' %
+        (width, height, cardOutlines[i][0],cardOutlines[i][1]))
+
+        # Add transparency
+        windows[i].attributes('-alpha',0.2)
+        # windows[i].bind("<Enter>", hideWindow)
+        # windows[i].bind("<Leave>", showWindow)
+        windows[i].bind("<Button-1>", click)
+
+        # Prevents the window manager from decorating this window
+        windows[i].overrideredirect(1)
+
+    print("Available cards are %s, %s, and %s" % (triplet[0][0], triplet[1][0], triplet[2][0]))
+
+    # Ranking. This will construct a list 'optimal' of each card in the triplet in
+    #   order of how they appear in the tierlist.
+    optimal = list()
     for tier in TIERS:
         for card in cards[tier]:
-            score = SM(None, str(textresult), str(card)).ratio()
-            if score > bestMatch:
-                bestMatch = score
-                cardMatch = card
 
-    #Store matched card
-    print("Detected card was %s, confidence %f" % (cardMatch, score))
-    triplet.append([cardMatch, i])
+            for c in triplet:
+                if c[0] == card:
+                    c.append(tier)
+                    optimal.append(c)
+                    triplet.remove(c)
 
+    print("\nCard ranking:")
+    for i in range(3):
+        print("[%d] %s \t %s" % (i+1, optimal[i][0], optimal[i][2]))
 
-# Define card geometry on window
-# TODO: Make this resolution-independent.
-cardOutlines = [(378,245,622,583),(656,245,900,583),(940,245,1184,583)]
-width = cardOutlines[0][2]-cardOutlines[0][0]
-height = cardOutlines[0][3]-cardOutlines[0][1]
+    # Draw colored overlay on screen over cards, i.e. green for best choice, red for worst
+    colors = ["green", "yellow", "red"]
+    for c in range(3):
+        windows[optimal[c][1]]["bg"] = colors[c]
+        # Card text = optimal[c][0]
+        T = Text(windows[optimal[c][1]], height=1, width=30)
+        T.pack(side=BOTTOM)
+        T.insert(END, optimal[c][0])
+        T.insert(END, " | ")
+        T.insert(END, optimal[c][2])
 
-# Build the colored card overlays.
-# TODO: Don't hide overlay. Just capture clicks on it and simulate them on the
-#       card below.
-master = Tk()
-master.withdraw()
-windows = list()
-for i in range(3):
-    obj = Toplevel()
-    windows.append(obj)
-    windows[i].wait_visibility(windows[i])
+    #TODO: weight mana costs with current curve
 
-    # No need for the window to be resizeable
-    windows[i].resizable(width=FALSE, height=FALSE)
+    master.mainloop()
+    print("Loop finished, continuing.")
+    time.sleep(1)
 
-    # Set window position and size
-    windows[i].geometry('%dx%d+%d+%d' %
-    (width, height, cardOutlines[i][0],cardOutlines[i][1]))
-
-    # Add transparency
-    windows[i].attributes('-alpha',0.2)
-    # windows[i].bind("<Enter>", hideWindow)
-    # windows[i].bind("<Leave>", showWindow)
-    windows[i].bind("<Button-1>", click)
-
-    # Prevents the window manager from decorating this window
-    windows[i].overrideredirect(1)
-
-print("Available cards are %s, %s, and %s" % (triplet[0][0], triplet[1][0], triplet[2][0]))
-
-# Ranking. This will construct a list 'optimal' of each card in the triplet in
-#   order of how they appear in the tierlist.
-optimal = list()
-for tier in TIERS:
-    for card in cards[tier]:
-
-        for c in triplet:
-            if c[0] == card:
-                c.append(tier)
-                optimal.append(c)
-                triplet.remove(c)
-
-print("\nCard ranking:")
-for i in range(3):
-    print("[%d] %s \t %s" % (i+1, optimal[i][0], optimal[i][2]))
-
-# Draw colored overlay on screen over cards, i.e. green for best choice, red for worst
-colors = ["green", "yellow", "red"]
-for c in range(3):
-    windows[optimal[c][1]]["bg"] = colors[c]
-
-#TODO: weight mana costs with current curve
-
-master.mainloop()
-
+    optimal.clear()
+    windows.clear()
+    triplet.clear()
 
 
 # This function courtesy of (http://www.pyimagesearch.com/2014/09/15/python-compare-two-images/)
